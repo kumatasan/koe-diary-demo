@@ -1,0 +1,469 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koe — 音声日記</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&family=Shippori+Mincho:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #1a1714; --ink2: #4a4540; --ink3: #8a8278;
+  --paper: #f7f4ef; --paper2: #ede9e2; --paper3: #e2ddd5;
+  --accent: #c85a2a; --accent2: #e8956a;
+  --joy: #d4a853; --calm: #5a8a7a; --mel: #7a6a9a; --heat: #c85a2a;
+}
+body { font-family: 'DM Mono', monospace; background: var(--paper); color: var(--ink); min-height: 100vh; overflow-x: hidden; }
+body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:999; opacity:0.45;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); }
+.app { max-width: 420px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+.screen { display:none; flex-direction:column; flex:1; animation:fadeIn 0.32s ease; }
+.screen.active { display:flex; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(7px)} to{opacity:1;transform:translateY(0)} }
+
+/* HEADER */
+.hdr { padding:20px 24px 16px; border-bottom:1px solid var(--paper3); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.logo { font-family:'Shippori Mincho',serif; font-size:22px; font-weight:500; letter-spacing:0.12em; }
+.logo span { color:var(--accent); }
+.badge { font-size:10px; letter-spacing:0.08em; color:var(--ink3); background:var(--paper2); padding:4px 10px; border-radius:20px; }
+.back { background:none; border:none; cursor:pointer; font-size:18px; color:var(--ink2); padding:4px 8px; font-family:inherit; }
+
+/* NAV */
+.nav { border-top:1px solid var(--paper3); display:flex; padding:8px 0 12px; flex-shrink:0; }
+.nb { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; cursor:pointer; padding:8px 0; outline:none; transition:opacity .15s; }
+.nb:hover { opacity:.7; }
+.ni { font-size:15px; color:var(--ink3); }
+.nl { font-size:9px; letter-spacing:.1em; color:var(--ink3); text-transform:uppercase; }
+.nb.on .nl, .nb.on .ni { color:var(--accent); }
+
+/* HOME */
+.hc { flex:1; padding:28px 24px; display:flex; flex-direction:column; gap:22px; overflow-y:auto; }
+.greet { font-family:'Shippori Mincho',serif; font-size:13px; color:var(--ink3); letter-spacing:.1em; line-height:1.9; }
+.greet strong { display:block; font-size:18px; color:var(--ink); font-weight:500; margin-bottom:4px; }
+.ra { display:flex; flex-direction:column; align-items:center; gap:14px; padding:26px 0; }
+.rbtn { width:88px; height:88px; border-radius:50%; border:2px solid var(--accent); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .3s; outline:none; }
+.rbtn:hover { background:rgba(200,90,42,.06); transform:scale(1.03); }
+.rbtn.rec { background:rgba(200,90,42,.08); animation:pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(200,90,42,.3)} 50%{box-shadow:0 0 0 16px rgba(200,90,42,0)} }
+.mic { width:28px; height:28px; fill:var(--accent); transition:transform .2s; }
+.rbtn.rec .mic { transform:scale(1.1); }
+.rlbl { font-size:11px; letter-spacing:.14em; color:var(--ink3); text-transform:uppercase; }
+.tmr { font-size:13px; letter-spacing:.12em; color:var(--accent); min-height:20px; }
+.wf { display:flex; align-items:center; gap:3px; height:32px; opacity:0; transition:opacity .3s; }
+.wf.on { opacity:1; }
+.wb { width:3px; background:var(--accent2); border-radius:2px; animation:wv .8s ease-in-out infinite; }
+.wb:nth-child(1){animation-delay:0s;height:8px}.wb:nth-child(2){animation-delay:.1s;height:14px}.wb:nth-child(3){animation-delay:.2s;height:20px}
+.wb:nth-child(4){animation-delay:.3s;height:26px}.wb:nth-child(5){animation-delay:.4s;height:20px}.wb:nth-child(6){animation-delay:.5s;height:14px}
+.wb:nth-child(7){animation-delay:.6s;height:8px}.wb:nth-child(8){animation-delay:.7s;height:16px}.wb:nth-child(9){animation-delay:.8s;height:22px}.wb:nth-child(10){animation-delay:.9s;height:12px}
+@keyframes wv { 0%,100%{transform:scaleY(.4);opacity:.5} 50%{transform:scaleY(1);opacity:1} }
+.sl { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink3); margin-bottom:10px; }
+.el { display:flex; flex-direction:column; gap:1px; }
+.ec { background:var(--paper2); padding:14px 16px; cursor:pointer; transition:background .15s; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ec:first-child{border-radius:2px 2px 0 0} .ec:last-child{border-radius:0 0 2px 2px} .ec:hover{background:var(--paper3)}
+.eleft { display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
+.edot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.edate { font-size:10px; color:var(--ink3); letter-spacing:.06em; }
+.eprev { font-size:12px; color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:210px; font-family:'Shippori Mincho',serif; line-height:1.5; }
+.chev { font-size:12px; color:var(--ink3); }
+.dv { height:1px; background:var(--paper3); }
+
+/* PROCESSING */
+.pc { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; padding:40px 24px; }
+.pr { width:64px; height:64px; border:1.5px solid var(--paper3); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.ps { font-size:11px; color:var(--ink3); letter-spacing:.08em; opacity:0; animation:si .5s ease forwards; text-align:center; }
+@keyframes si { to{opacity:1} }
+
+/* ENTRY INSIGHT */
+.eic { flex:1; padding:24px; display:flex; flex-direction:column; gap:20px; overflow-y:auto; }
+.tb { background:var(--paper2); padding:16px; border-left:2px solid var(--paper3); border-radius:0 2px 2px 0; }
+.tl { font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink3); margin-bottom:8px; }
+.tt { font-family:'Shippori Mincho',serif; font-size:13px; line-height:2; color:var(--ink2); }
+.emb { display:flex; flex-direction:column; gap:10px; }
+.emr { display:flex; align-items:center; gap:12px; }
+.emn { font-size:11px; letter-spacing:.08em; color:var(--ink3); width:56px; flex-shrink:0; }
+.embw { flex:1; height:4px; background:var(--paper3); border-radius:2px; overflow:hidden; }
+.embf { height:100%; border-radius:2px; width:0; transition:width .8s cubic-bezier(.4,0,.2,1); }
+.emv { font-size:10px; color:var(--ink3); width:28px; text-align:right; }
+.kb { display:flex; flex-wrap:wrap; gap:8px; }
+.kt { font-size:11px; padding:5px 12px; background:var(--paper2); border:1px solid var(--paper3); border-radius:20px; color:var(--ink2); font-family:'Shippori Mincho',serif; }
+.aic { background:var(--ink); color:var(--paper); padding:20px; border-radius:2px; position:relative; overflow:hidden; }
+.aic::before { content:'"'; position:absolute; top:-8px; left:12px; font-size:80px; font-family:'Shippori Mincho',serif; color:rgba(247,244,239,.06); line-height:1; }
+.ail { font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent2); margin-bottom:10px; }
+.ait { font-family:'Shippori Mincho',serif; font-size:14px; line-height:2; color:rgba(247,244,239,.9); }
+
+/* INSIGHTS SCREEN */
+.isc { flex:1; padding:24px; display:flex; flex-direction:column; gap:22px; overflow-y:auto; }
+.ptgl { display:flex; background:var(--paper2); border-radius:20px; padding:3px; gap:2px; }
+.pb { flex:1; padding:7px 0; font-size:10px; letter-spacing:.1em; text-transform:uppercase; background:none; border:none; cursor:pointer; border-radius:18px; color:var(--ink3); font-family:'DM Mono',monospace; transition:all .2s; }
+.pb.on { background:var(--ink); color:var(--paper); }
+.sg { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.sc { background:var(--paper2); padding:16px; border-radius:2px; }
+.scl { font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); margin-bottom:8px; }
+.scv { font-size:28px; font-weight:300; letter-spacing:-.02em; color:var(--ink); line-height:1; margin-bottom:3px; }
+.scv.joy { color:var(--joy); } .scv.bad { color:var(--mel); }
+.scs { font-size:10px; color:var(--ink3); }
+.sct { font-size:10px; margin-top:5px; }
+.tup { color:var(--calm); } .tdn { color:var(--heat); }
+.nc { background:var(--ink); border-radius:2px; padding:20px; position:relative; overflow:hidden; }
+.nc::before { content:'"'; position:absolute; top:-8px; left:12px; font-size:80px; font-family:'Shippori Mincho',serif; color:rgba(247,244,239,.05); line-height:1; }
+.np { font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent2); margin-bottom:10px; }
+.nt { font-family:'Shippori Mincho',serif; font-size:13px; line-height:2.1; color:rgba(247,244,239,.88); }
+.etr { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.etn { font-size:10px; color:var(--ink3); width:52px; flex-shrink:0; }
+.etw { flex:1; height:6px; background:var(--paper3); border-radius:3px; overflow:hidden; }
+.etf { height:100%; border-radius:3px; width:0; transition:width 1s cubic-bezier(.4,0,.2,1); }
+.etv { font-size:10px; color:var(--ink3); width:28px; text-align:right; }
+.spkw { display:flex; align-items:flex-end; gap:4px; height:44px; }
+.spkb { flex:1; border-radius:1px; min-height:4px; transition:height .8s cubic-bezier(.4,0,.2,1); }
+.spklbl { font-size:9px; color:var(--ink3); letter-spacing:.06em; flex:1; text-align:center; }
+.tsk { display:flex; flex-direction:column; gap:1px; }
+.ti { display:flex; align-items:flex-start; gap:12px; padding:13px 14px; background:var(--paper2); cursor:pointer; transition:background .15s; }
+.ti:first-child{border-radius:2px 2px 0 0} .ti:last-child{border-radius:0 0 2px 2px} .ti:hover{background:var(--paper3)}
+.tck { width:16px; height:16px; border:1.5px solid var(--paper3); border-radius:3px; flex-shrink:0; margin-top:2px; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+.ti.done .tck { background:var(--calm); border-color:var(--calm); }
+.tchi { font-size:10px; color:#fff; opacity:0; transition:opacity .15s; }
+.ti.done .tchi { opacity:1; }
+.tb2 { flex:1; min-width:0; }
+.tt2 { font-size:12px; color:var(--ink2); font-family:'Shippori Mincho',serif; line-height:1.6; }
+.ti.done .tt2 { text-decoration:line-through; color:var(--ink3); }
+.tsrc { font-size:9px; color:var(--ink3); letter-spacing:.06em; margin-top:3px; }
+.tty { font-size:9px; padding:2px 8px; border-radius:10px; flex-shrink:0; margin-top:2px; }
+.tty.todo { background:rgba(90,138,122,.12); color:var(--calm); }
+.tty.future { background:rgba(212,168,83,.12); color:var(--joy); }
+
+/* CALENDAR */
+.cc { flex:1; padding:24px; display:flex; flex-direction:column; gap:20px; overflow-y:auto; }
+.cg { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.cdl { font-size:9px; text-align:center; color:var(--ink3); letter-spacing:.06em; padding-bottom:4px; }
+.cd { aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--ink3); }
+.cd.he { cursor:pointer; transition:transform .15s; }
+.cd.he:hover { transform:scale(1.15); }
+.cd.he span { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:500; color:#fff; opacity:.85; }
+.cd.today span { outline:1.5px solid var(--accent); outline-offset:2px; }
+.leg { display:flex; gap:16px; flex-wrap:wrap; }
+.li { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--ink3); }
+.ld { width:8px; height:8px; border-radius:50%; }
+.trb { background:var(--paper2); padding:16px; border-radius:2px; }
+.trl { font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink3); margin-bottom:10px; }
+.tri { font-family:'Shippori Mincho',serif; font-size:13px; line-height:2; color:var(--ink2); }
+.tri em { font-style:normal; color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HOME -->
+<div class="screen active" id="s-home">
+  <div class="hdr"><div class="logo">声<span>.</span></div><div class="badge" id="d-today"></div></div>
+  <div class="hc">
+    <div class="greet"><strong id="d-greet">こんばんは</strong>今日はどんな一日でしたか？<br>話すだけで日記になります。</div>
+    <div class="ra">
+      <div class="wf" id="wf"><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div></div>
+      <button class="rbtn" id="rbtn" onclick="toggleRec()">
+        <svg class="mic" viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4z"/><path d="M19 10a7 7 0 0 1-14 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="21" x2="15" y2="21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+      <div class="rlbl" id="rlbl">タップして録音</div>
+      <div class="tmr" id="tmr"></div>
+    </div>
+    <div><div class="sl">最近の記録</div><div class="el" id="elist"></div></div>
+  </div>
+  <nav class="nav">
+    <button class="nb on" onclick="go('home')"><span class="ni">⊙</span><span class="nl">ホーム</span></button>
+    <button class="nb" onclick="go('insights')"><span class="ni">◈</span><span class="nl">インサイト</span></button>
+    <button class="nb" onclick="go('cal')"><span class="ni">▦</span><span class="nl">カレンダー</span></button>
+  </nav>
+</div>
+
+<!-- PROCESSING -->
+<div class="screen" id="s-proc">
+  <div class="hdr"><div class="logo">声<span>.</span></div></div>
+  <div class="pc">
+    <div class="pr"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+      <div id="p1" class="ps" style="animation-delay:0s">音声を解析しています</div>
+      <div id="p2" class="ps" style="animation-delay:1.2s;opacity:0">感情を読み取っています</div>
+      <div id="p3" class="ps" style="animation-delay:2.4s;opacity:0">インサイトを生成中</div>
+    </div>
+  </div>
+</div>
+
+<!-- ENTRY INSIGHT -->
+<div class="screen" id="s-entry">
+  <div class="hdr"><button class="back" onclick="go('home')">←</button><div class="logo">声<span>.</span></div><div class="badge" id="d-ebadge"></div></div>
+  <div class="eic">
+    <div class="tb"><div class="tl">文字起こし</div><div class="tt" id="d-trans"></div></div>
+    <div><div class="sl">感情分析</div><div class="emb" id="d-emos"></div></div>
+    <div><div class="sl">キーワード</div><div class="kb" id="d-kws"></div></div>
+    <div class="aic"><div class="ail">AI インサイト</div><div class="ait" id="d-ains"></div></div>
+  </div>
+</div>
+
+<!-- INSIGHTS -->
+<div class="screen" id="s-insights">
+  <div class="hdr"><div class="logo">声<span>.</span></div><div class="badge" id="d-ibadge">5月 2026</div></div>
+  <div class="isc">
+    <div class="ptgl">
+      <button class="pb on" onclick="setPeriod('week',this)">今週</button>
+      <button class="pb" onclick="setPeriod('month',this)">今月</button>
+    </div>
+    <div class="sg" id="d-scores"></div>
+    <div class="nc"><div class="np" id="d-np">今週のインサイト</div><div class="nt" id="d-nt"></div></div>
+    <div>
+      <div class="sl" id="d-etl">感情の内訳（今週）</div>
+      <div id="d-etrs"></div>
+      <div style="margin-top:14px">
+        <div class="sl">日別スコア推移</div>
+        <div class="spkw" id="d-spk"></div>
+        <div style="display:flex;margin-top:4px" id="d-spkl"></div>
+      </div>
+    </div>
+    <div>
+      <div class="sl">日記から拾ったタスク</div>
+      <div class="tsk" id="d-tasks"></div>
+    </div>
+  </div>
+  <nav class="nav">
+    <button class="nb" onclick="go('home')"><span class="ni">⊙</span><span class="nl">ホーム</span></button>
+    <button class="nb on" onclick="go('insights')"><span class="ni">◈</span><span class="nl">インサイト</span></button>
+    <button class="nb" onclick="go('cal')"><span class="ni">▦</span><span class="nl">カレンダー</span></button>
+  </nav>
+</div>
+
+<!-- CALENDAR -->
+<div class="screen" id="s-cal">
+  <div class="hdr"><div class="logo">声<span>.</span></div><div class="badge">5月 2026</div></div>
+  <div class="cc">
+    <div><div class="sl">今月の記録</div><div class="cg" id="d-cal"></div></div>
+    <div class="leg">
+      <div class="li"><div class="ld" style="background:var(--joy)"></div>喜び</div>
+      <div class="li"><div class="ld" style="background:var(--calm)"></div>穏やか</div>
+      <div class="li"><div class="ld" style="background:var(--mel)"></div>憂い</div>
+      <div class="li"><div class="ld" style="background:var(--heat)"></div>熱量</div>
+    </div>
+    <div class="trb"><div class="trl">AI トレンド分析</div><div class="tri">今月は<em>穏やかな日</em>が多い傾向。週半ば（水・木）に感情が揺れやすいパターンが見られます。<em>仕事関連キーワード</em>は月初に集中しています。</div></div>
+  </div>
+  <nav class="nav">
+    <button class="nb" onclick="go('home')"><span class="ni">⊙</span><span class="nl">ホーム</span></button>
+    <button class="nb" onclick="go('insights')"><span class="ni">◈</span><span class="nl">インサイト</span></button>
+    <button class="nb on" onclick="go('cal')"><span class="ni">▦</span><span class="nl">カレンダー</span></button>
+  </nav>
+</div>
+
+<script>
+// ── DATA ──
+const ENTRIES = [
+  { date:'5月11日', ds:'11', prev:'今日は久しぶりに友人と会った。話が弾んで...', tr:'今日は久しぶりに友人と会った。話が弾んで、気がついたら3時間も経っていた。最近仕事が忙しかったから、こういう時間がとても大切だと改めて感じた。来週も誘ってみようかな。', ems:[{n:'喜び',p:72,c:'var(--joy)'},{n:'穏やか',p:55,c:'var(--calm)'},{n:'憂い',p:12,c:'var(--mel)'},{n:'熱量',p:28,c:'var(--heat)'}], kws:['友人','3時間','仕事','リフレッシュ'], ins:'友人との時間があなたの感情を大きくリセットしています。「忙しさ」と「つながり」のバランスが今週のテーマかもしれません。', ec:'var(--joy)', el:'喜び' },
+  { date:'5月10日', ds:'10', prev:'プレゼンがうまくいかなかった。準備不足を...', tr:'プレゼンがうまくいかなかった。準備不足を実感した。もっと早くから取り組むべきだったと反省している。ただ、上司が「次につながる経験」と言ってくれて少し救われた気がした。', ems:[{n:'喜び',p:18,c:'var(--joy)'},{n:'穏やか',p:22,c:'var(--calm)'},{n:'憂い',p:68,c:'var(--mel)'},{n:'熱量',p:55,c:'var(--heat)'}], kws:['プレゼン','準備不足','反省','上司'], ins:'失敗の感情と向き合う言葉が多いですが、同時に「救われた」という受容の言葉も出ています。自己批判の中にも回復力が見えます。', ec:'var(--mel)', el:'憂い' },
+  { date:'5月 9日', ds:'9',  prev:'朝早く起きて散歩した。桜がまだ少し残って...', tr:'朝早く起きて散歩した。桜がまだ少し残っていて、静かな朝だった。何も考えずにただ歩く時間が心地よかった。こういう朝をもっと作りたい。', ems:[{n:'喜び',p:48,c:'var(--joy)'},{n:'穏やか',p:82,c:'var(--calm)'},{n:'憂い',p:8,c:'var(--mel)'},{n:'熱量',p:14,c:'var(--heat)'}], kws:['散歩','朝','桜','静か'], ins:'「何も考えない時間」への渇望が言葉に出ています。日常の中の静けさがあなたの充電源になっているようです。', ec:'var(--calm)', el:'穏やか' }
+];
+const NEW_E = { date:'今日', ds:'12', prev:'チームのミーティングで、自分のアイデアが...', tr:'チームのミーティングで、自分のアイデアが採用された。最初は緊張していたけど、みんなが真剣に聞いてくれて自信がついた気がする。この調子で来週の企画も進めたい。', ems:[{n:'喜び',p:78,c:'var(--joy)'},{n:'穏やか',p:45,c:'var(--calm)'},{n:'憂い',p:8,c:'var(--mel)'},{n:'熱量',p:62,c:'var(--heat)'}], kws:['アイデア採用','チーム','自信','企画'], ins:'「自信がついた」という言葉が今日の核心です。承認体験があなたのエネルギーに直結しています。このモメンタムを来週につなげていきましょう。', ec:'var(--joy)', el:'喜び' };
+
+const PD = {
+  week: {
+    scores:[
+      {l:'Happy スコア', v:'78', u:'/ 100', s:'先週比 +12pt', cls:'joy', td:'↑ 上昇傾向', tc:'tup'},
+      {l:'困り度スコア',  v:'24', u:'/ 100', s:'先週比 −8pt',  cls:'bad', td:'↓ 改善中',   tc:'tdn'},
+      {l:'記録日数',      v:'4',  u:'/ 7日', s:'今週の記録',   cls:'',    td:'',            tc:''},
+      {l:'平均録音時間',  v:'94', u:'秒',    s:'先週比 +11秒', cls:'',    td:'',            tc:''}
+    ],
+    np:'今週のインサイト',
+    nt:'今週は感情的な浮き沈みがありながらも、全体的にポジティブな回復力を見せた週でした。プレゼン失敗の落ち込みから翌日の友人との交流で急回復するパターンは、あなたが「人とのつながり」で感情を立て直す傾向を示しています。',
+    etl:'感情の内訳（今週）',
+    ems:[{n:'喜び',p:55,c:'var(--joy)'},{n:'穏やか',p:48,c:'var(--calm)'},{n:'憂い',p:28,c:'var(--mel)'},{n:'熱量',p:38,c:'var(--heat)'}],
+    spkd:['月','火','水','木','金','土','日'],
+    spkv:[62,45,68,28,72,55,78],
+    spkc:['#d4a853','#5a8a7a','#d4a853','#7a6a9a','#d4a853','#5a8a7a','#d4a853']
+  },
+  month: {
+    scores:[
+      {l:'Happy スコア', v:'71', u:'/ 100', s:'先月比 +6pt',  cls:'joy', td:'↑ 上昇傾向', tc:'tup'},
+      {l:'困り度スコア',  v:'31', u:'/ 100', s:'先月比 −4pt',  cls:'bad', td:'↓ 改善中',   tc:'tdn'},
+      {l:'記録日数',      v:'9',  u:'/ 12日',s:'今月の記録',   cls:'',    td:'',            tc:''},
+      {l:'平均録音時間',  v:'88', u:'秒',    s:'先月比 +5秒',  cls:'',    td:'',            tc:''}
+    ],
+    np:'今月のインサイト',
+    nt:'5月全体を通じて、感情の波はありながらも着実に「穏やか」と「喜び」が増加しています。月初に仕事関連のストレスが集中する一方、週末はリフレッシュで回復するサイクルが定着しています。来月は水・木曜日の感情ケアを意識すると良いかもしれません。',
+    etl:'感情の内訳（今月）',
+    ems:[{n:'喜び',p:52,c:'var(--joy)'},{n:'穏やか',p:58,c:'var(--calm)'},{n:'憂い',p:24,c:'var(--mel)'},{n:'熱量',p:35,c:'var(--heat)'}],
+    spkd:['1w','2w','3w','4w','5w','',''],
+    spkv:[55,48,72,62,78,0,0],
+    spkc:['#5a8a7a','#7a6a9a','#d4a853','#d4a853','#d4a853','transparent','transparent']
+  }
+};
+
+let TASKS = [
+  {t:'来週も友人を誘ってみる',      src:'5月11日の日記', ty:'todo',   done:false},
+  {t:'プレゼンの準備を早めに始める', src:'5月10日の日記', ty:'todo',   done:false},
+  {t:'朝の散歩習慣を作る',          src:'5月 9日の日記', ty:'future', done:false},
+  {t:'来週の企画書を進める',         src:'今日の日記',    ty:'future', done:false},
+  {t:'上司にお礼を伝える',           src:'5月10日の日記', ty:'todo',   done:true}
+];
+
+let entries = [...ENTRIES];
+let period = 'week';
+let recOn = false, recTmr = null, recSec = 0;
+
+// ── INIT ──
+function init() {
+  const h = new Date().getHours();
+  document.getElementById('d-greet').textContent = h<12?'おはようございます':h<18?'こんにちは':'こんばんは';
+  const mo = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'][new Date().getMonth()];
+  document.getElementById('d-today').textContent = `${mo}${new Date().getDate()}日`;
+  renderEntries(); renderCal(); renderInsights();
+}
+
+function renderEntries() {
+  const el = document.getElementById('elist'); el.innerHTML='';
+  entries.forEach((e,i) => {
+    const d=document.createElement('div'); d.className='ec';
+    d.innerHTML=`<div class="eleft"><div class="edot" style="background:${e.ec}"></div><div><div class="edate">${e.date} · ${e.el}</div><div class="eprev">${e.prev}</div></div></div><span class="chev">›</span>`;
+    d.onclick=()=>showEntry(e); el.appendChild(d);
+    if(i<entries.length-1){const v=document.createElement('div');v.className='dv';el.appendChild(v);}
+  });
+}
+
+// ── RECORDING ──
+function toggleRec() {
+  if (!recOn) {
+    recOn=true; recSec=0;
+    document.getElementById('rbtn').classList.add('rec');
+    document.getElementById('rlbl').textContent='録音中 — タップで完了';
+    document.getElementById('wf').classList.add('on');
+    recTmr=setInterval(()=>{recSec++;const m=String(Math.floor(recSec/60)).padStart(2,'0'),s=String(recSec%60).padStart(2,'0');document.getElementById('tmr').textContent=`${m}:${s}`;},1000);
+  } else {
+    recOn=false; clearInterval(recTmr);
+    document.getElementById('rbtn').classList.remove('rec');
+    document.getElementById('rlbl').textContent='タップして録音';
+    document.getElementById('wf').classList.remove('on');
+    document.getElementById('tmr').textContent='';
+    showProc();
+  }
+}
+
+function showProc() {
+  showScreen('s-proc');
+  ['p1','p2','p3'].forEach(id=>{const el=document.getElementById(id);el.style.opacity='0';el.style.animation='none';void el.offsetWidth;});
+  document.getElementById('p1').style.animation='si .5s ease forwards';
+  setTimeout(()=>{document.getElementById('p2').style.animation='si .5s ease forwards';},1200);
+  setTimeout(()=>{document.getElementById('p3').style.animation='si .5s ease forwards';},2400);
+  setTimeout(()=>{
+    entries.unshift({...NEW_E});
+    TASKS.unshift({t:'来週の企画書を進める',src:'今日の日記',ty:'future',done:false});
+    renderEntries(); renderInsights(); showEntry({...NEW_E});
+  },3600);
+}
+
+// ── NAVIGATION ──
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function go(pg) {
+  const map={home:'s-home',insights:'s-insights',cal:'s-cal'};
+  showScreen(map[pg]);
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll(`.nb`).forEach((b,i)=>{
+    const pages=['home','insights','cal'];
+    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes(`'${pg}'`)) b.classList.add('on');
+  });
+}
+
+function showEntry(e) {
+  document.getElementById('d-ebadge').textContent=e.date;
+  document.getElementById('d-trans').textContent=e.tr;
+  const eb=document.getElementById('d-emos'); eb.innerHTML='';
+  e.ems.forEach(em=>{
+    const r=document.createElement('div');r.className='emr';
+    r.innerHTML=`<div class="emn">${em.n}</div><div class="embw"><div class="embf" style="background:${em.c}" data-p="${em.p}"></div></div><div class="emv">${em.p}%</div>`;
+    eb.appendChild(r);
+  });
+  const kb=document.getElementById('d-kws');kb.innerHTML='';
+  e.kws.forEach(k=>{const t=document.createElement('div');t.className='kt';t.textContent=k;kb.appendChild(t);});
+  document.getElementById('d-ains').textContent=e.ins;
+  showScreen('s-entry');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('#d-emos .embf').forEach(b=>{b.style.width=b.dataset.p+'%';});
+  }));
+}
+
+// ── INSIGHTS ──
+function setPeriod(p, btn) {
+  period=p;
+  document.querySelectorAll('.pb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderInsights();
+}
+
+function renderInsights() {
+  const d=PD[period];
+  // scores
+  const sg=document.getElementById('d-scores'); sg.innerHTML='';
+  d.scores.forEach(sc=>{
+    const c=document.createElement('div');c.className='sc';
+    c.innerHTML=`<div class="scl">${sc.l}</div><div class="scv ${sc.cls}">${sc.v}<span style="font-size:12px;color:var(--ink3);margin-left:2px">${sc.u}</span></div><div class="scs">${sc.s}</div>${sc.td?`<div class="sct ${sc.tc}">${sc.td}</div>`:''}`;
+    sg.appendChild(c);
+  });
+  // narrative
+  document.getElementById('d-np').textContent=d.np;
+  document.getElementById('d-nt').textContent=d.nt;
+  // emo trends
+  document.getElementById('d-etl').textContent=d.etl;
+  const et=document.getElementById('d-etrs');et.innerHTML='';
+  d.ems.forEach(em=>{
+    const r=document.createElement('div');r.className='etr';
+    r.innerHTML=`<div class="etn">${em.n}</div><div class="etw"><div class="etf" style="background:${em.c}" data-p="${em.p}"></div></div><div class="etv">${em.p}%</div>`;
+    et.appendChild(r);
+  });
+  // sparkline
+  const sw=document.getElementById('d-spk'),sl=document.getElementById('d-spkl');
+  sw.innerHTML='';sl.innerHTML='';
+  const mx=Math.max(...d.spkv.filter(v=>v>0));
+  d.spkv.forEach((v,i)=>{
+    const b=document.createElement('div');b.className='spkb';
+    b.style.background=d.spkc[i];b.style.height='4px';
+    b.setAttribute('data-h',v>0?Math.round(v/mx*100)+'%':'4px');
+    sw.appendChild(b);
+    const l=document.createElement('div');l.className='spklbl';l.textContent=d.spkd[i];sl.appendChild(l);
+  });
+  // tasks
+  renderTasks();
+  // animate
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('.etf').forEach(b=>{b.style.width=b.dataset.p+'%';});
+    document.querySelectorAll('.spkb').forEach(b=>{b.style.height=b.dataset.h;b.style.transition='height .8s cubic-bezier(.4,0,.2,1)';});
+  }));
+}
+
+function renderTasks() {
+  const tl=document.getElementById('d-tasks');tl.innerHTML='';
+  TASKS.forEach((t,i)=>{
+    const item=document.createElement('div');item.className='ti'+(t.done?' done':'');
+    item.innerHTML=`<div class="tck"><div class="tchi">✓</div></div><div class="tb2"><div class="tt2">${t.t}</div><div class="tsrc">${t.src}</div></div><div class="tty ${t.ty}">${t.ty==='todo'?'やること':'予定'}</div>`;
+    item.onclick=()=>{TASKS[i].done=!TASKS[i].done;renderTasks();};
+    tl.appendChild(item);
+    if(i<TASKS.length-1){const v=document.createElement('div');v.className='dv';tl.appendChild(v);}
+  });
+}
+
+// ── CALENDAR ──
+function renderCal() {
+  const g=document.getElementById('d-cal');g.innerHTML='';
+  ['日','月','火','水','木','金','土'].forEach(d=>{const el=document.createElement('div');el.className='cdl';el.textContent=d;g.appendChild(el);});
+  const colored={3:{c:'var(--joy)'},4:{c:'var(--calm)'},5:{c:'var(--calm)'},6:{c:'var(--heat)'},9:{c:'var(--calm)',e:ENTRIES[2]},10:{c:'var(--mel)',e:ENTRIES[1]},11:{c:'var(--joy)',e:ENTRIES[0]},12:{c:'var(--joy)',e:null}};
+  for(let i=0;i<5;i++) g.appendChild(document.createElement('div'));
+  for(let d=1;d<=31;d++){
+    const el=document.createElement('div');el.className='cd';
+    const info=colored[d];
+    if(info){
+      el.className+=' he';if(d===12)el.className+=' today';
+      const sp=document.createElement('span');sp.textContent=d;sp.style.background=info.c;el.appendChild(sp);
+      if(info.e)el.onclick=()=>showEntry(info.e);
+    } else {el.textContent=d;if(d===12)el.style.color='var(--accent)';}
+    g.appendChild(el);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
